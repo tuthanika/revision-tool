@@ -7,8 +7,7 @@ import 'package:revitool/core/security/security_service.dart';
 import 'package:revitool/utils.dart';
 
 class SecurityCommand extends Command<String> {
-  static final _securityService = SecurityService();
-  String get tag => "[Security - Defender]";
+  String get tag => "Security - Defender";
 
   @override
   String get description => '[$tag] A command to manage Windows Defender';
@@ -27,56 +26,52 @@ class SecurityCommand extends Command<String> {
     final bool isForce = argResults?.command?.command?.name == '--force';
     switch (argResults?.command?.name) {
       case 'enable':
-        if (!isForce && _securityService.statusDefender) {
-          stdout.writeln('$tag Windows Defender is already enabled');
+        if (!isForce && const SecurityServiceImpl().statusDefender) {
+          logger.i('$name: Windows Defender is already enabled');
           exit(0);
         }
-        await _securityService.enableDefender();
+        await const SecurityServiceImpl().enableDefender();
         break;
       case 'disable':
         await _disableDefender(isForce);
         break;
       default:
-        stdout.writeln('''
-Defender Status: ${_securityService.statusDefender.toString()}
-Virus and Threat Protections Status: ${_securityService.statusDefenderProtections.toString()}
-''');
+        logger.i(
+          '$name: defender-status: ${const SecurityServiceImpl().statusDefender.toString()}\nVirus and Threat Protections Status: ${const SecurityServiceImpl().statusDefenderProtections.toString()}',
+        );
     }
     exit(0);
   }
 
   Future<void> _disableDefender(bool isForce) async {
-    if (!isForce && !_securityService.statusDefender) {
-      stdout.writeln('$tag Windows Defender is already disabled');
+    if (!isForce && !const SecurityServiceImpl().statusDefender) {
+      logger.i('$name: Windows Defender is already disabled');
       exit(0);
     }
 
-    if (!isProcessRunning('explorer.exe')) {
+    if (!isForce && !isProcessRunning('explorer.exe')) {
+      logger.i('$name: Explorer.exe is not running. Starting Explorer...');
       await Process.run('explorer.exe', const []);
       await Future.delayed(const Duration(seconds: 5));
     }
 
-    stdout.writeln('$tag Disabling Windows Defender...');
-
-    stdout.writeln(
-      '$tag Checking if Virus and Threat Protections are enabled...',
-    );
+    logger.i('$name: Checking if Virus and Threat Protections are enabled...');
     int count = 0;
-    while (_securityService.statusDefenderProtections) {
+    while (const SecurityServiceImpl().statusDefenderProtections) {
       if (count > 10) {
-        stderr.writeln('$tag Unable to disable Defender. Exiting...');
+        logger.e('$name: Unable to disable Defender. Exiting...');
         exit(1);
       }
 
-      if (!_securityService.statusDefenderProtectionTamper) {
+      if (!const SecurityServiceImpl().statusDefenderProtectionTamper) {
         await runPSCommand(
           'Set-MpPreference -DisableRealtimeMonitoring \$true',
         );
         break;
       }
 
-      stdout.writeln('$tag Please disable Realtime and Tamper Protections');
-      await _securityService.openDefenderThreatSettings();
+      logger.i('$name: Please disable Realtime and Tamper Protections');
+      await const SecurityServiceImpl().openDefenderThreatSettings();
 
       await Future.delayed(const Duration(seconds: 7));
       count++;
@@ -84,9 +79,13 @@ Virus and Threat Protections Status: ${_securityService.statusDefenderProtection
     await Process.run('taskkill', ['/f', '/im', 'SecHealthUI.exe']);
 
     try {
-      await _securityService.disableDefender();
+      await const SecurityServiceImpl().disableDefender();
     } on Exception catch (e) {
-      stderr.writeln('$tag Error disabling Windows Defender: ${e.toString()}');
+      logger.e(
+        '$name: Error disabling Windows Defender: ${e.toString()}',
+        error: e,
+        stackTrace: StackTrace.current,
+      );
       exit(1);
     }
   }
