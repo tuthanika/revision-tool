@@ -18,6 +18,7 @@ class LocaleConfig {
     'ar': 'Arabic',
     'it': 'Italian',
     'ro': 'Romanian',
+    'vi': 'Tiếng Việt',
   };
 
   static AppLocale parse(String name) {
