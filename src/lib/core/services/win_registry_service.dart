@@ -52,40 +52,7 @@ class WinRegistryService {
   static bool get isIntelCpu => _cpuVendorIdentifier.contains('intel');
   static bool get isAmdCpu => _cpuVendorIdentifier.contains('amd');
 
-  static bool get isSupported {
-    return _validate() ||
-        readString(
-              RegistryHive.localMachine,
-              r'SOFTWARE\Microsoft\Windows NT\CurrentVersion',
-              'EditionSubVersion',
-            ) ==
-            'ReviOS' ||
-        readString(
-              RegistryHive.localMachine,
-              r'SOFTWARE\Microsoft\Windows NT\CurrentVersion',
-              'EditionSubManufacturer',
-            ) ==
-            'MeetRevision';
-  }
-
-  static bool _validate() {
-    final RegistryKey key = Registry.openPath(
-      RegistryHive.localMachine,
-      path:
-          r'SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\Packages',
-    );
-
-    try {
-      return key.subkeyNames
-          .lastWhere((element) => element.startsWith('Revision-ReviOS'))
-          .isNotEmpty;
-    } catch (e) {
-      logger.w('Error validating ReviOS');
-      return false;
-    } finally {
-      key.close();
-    }
-  }
+  static bool get isSupported => true;
 
   static Future<void> hidePageVisibilitySettings(String pageName) async {
     final String? currentValue = readString(
